@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Socket.io</title>
+    <style> *:focus {outline: none} .delete { background: none; border: none; cursor:pointer } </style>
+</head>
+
+<body style="display: flex; flex-direction: column;">
+    <div style="margin: auto;">
+    <h1>Todolist Collaborative</h1>
+    <p>Utilisateurs connectées : <i id="names"></i></p>
+    <fieldset>
+        <ul id="list" style = "list-style: none;"></ul>
+        <form id="ajouter">
+            <input type="text" name="todo" autofocus>
+            <input type="submit" value="Ajouter">
+        </form>
+
+
+    </fieldset>
+    </div>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        var socket = io.connect('http://localhost:8080');
+        
+        // Détermine le pseudo de l'utilisateur
+        var pseudo = prompt('Quel est votre pseudo ?')
+
+        // Envoi le pseudo au serveur sous forme d'évènement
+        socket.emit('nouveau', pseudo);
+
+        // Lorsqu'un élément est ajouté à la liste todo, celui-ci est envoyé au serveur sous forme d'évenement
+        $('#ajouter').submit( (e) => {
+            e.preventDefault();
+            socket.emit('newtodo', $('#ajouter').find('input[name="todo"]').val());
+            $('#ajouter').find('input[name="todo"]').val('');
+        });
+
+        // Met à jour l'affichage des utilisateurs connectés grâce à la liste envoyée par le serveur
+        socket.on("updateUser", (users) => {
+            $("#names").empty();
+            for (i = 0; i < users.length; i++) {
+                if (i > 0) $("#names").append(", ");
+                $("#names").append(users[i]);
+            }
+        });
+
+        // Met à jour l'affichage de la liste todo grâce à la liste envoyée par le serveur
+        socket.on("updateList", (list) => {
+            $("#list").empty();
+
+            // Affiche un élément '<li>' par élément de la liste todo
+            for(i = 0; i<list.length; i++) {
+              $("#list").append("<li><button onclick='deleteOne("+ i +")' class='delete'>✘</button> " + list[i] + " </li>");
+            };
+        }); 
+
+        // Envoi un évenement au serveur pour supprimer l'élément de la liste todo correspondant à l'index i
+        function deleteOne(i){
+            socket.emit('deleteOne', i) 
+        }
+    </script>
+</body>
+
+</html>
